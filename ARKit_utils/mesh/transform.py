@@ -10,17 +10,13 @@ Mail: yaofeng1995@gmail.com
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import numpy as np
 import math
 from math import cos, sin
 
 
 
-
-
-
-# pitch, yaw, roll的定义不变，只是合成的顺序为Z*X*Y
+# pitch, yaw, roll Z*X*Y
 def angle2matrix_arkit(angles):
     x, y, z = np.deg2rad(angles[0]), np.deg2rad(angles[1]), np.deg2rad(angles[2])
     # x
@@ -57,12 +53,6 @@ def matrix2angle_arkit(R):
         z = 0
 
     return x, y, z
-
-
-
-
-
-
 
 
 def angle2matrix(angles):
