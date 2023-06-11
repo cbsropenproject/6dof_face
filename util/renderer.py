@@ -64,7 +64,7 @@ class Renderer(object):
         w_ = verts[:, [3]]
         verts = verts / w_
 
-        # points2d，x轴向右，y轴向下
+        # points2d，x right，y down
         points2d = verts[:, :2]
         points2d[:, 1] = self.img_size - points2d[:, 1]
 

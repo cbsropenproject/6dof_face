@@ -24,8 +24,6 @@ renderer = Renderer(img_size=800)
 
 def resize_img(img, bbox, target_size=None):
     img_h, img_w, _ = img.shape
-    # pdb.set_trace()
-
     if img_w > img_h:
         max_size = img_w
         diff = img_w - img_h
@@ -35,16 +33,11 @@ def resize_img(img, bbox, target_size=None):
         else:
             pad1 = diff // 2
             pad2 = pad1
-
         img_pad = np.pad(img, ((pad1, pad2), (0, 0), (0, 0)),mode='constant')
-
         bbox[:,1] +=pad1
         bbox[:,3] +=pad1
-
     elif img_w == img_h:
         img_pad = img
-
-
     elif img_h > img_w:
         max_size = img_h
         diff = img_h - img_w
@@ -54,12 +47,9 @@ def resize_img(img, bbox, target_size=None):
         else:
             pad1 = diff // 2
             pad2 = pad1
-
         img_pad = np.pad(img, ((0, 0), (pad1, pad2), (0, 0)),mode='constant')
-
         bbox[:,0] +=pad1
         bbox[:,2] +=pad1
-
 
     img_resize = cv2.resize(img_pad, (target_size,)*2)
     scale = target_size / img_pad.shape[0]
@@ -148,7 +138,6 @@ def det_net(img):
 
     # keep top-K before NMS
     order = scores.argsort()[::-1]
-    # order = scores.argsort()[::-1][:args.top_k]
     boxes = boxes[order]
     landms = landms[order]
     scores = scores[order]
@@ -232,7 +221,6 @@ if __name__ == '__main__':
         w, h = x_max - x_min, y_max - y_min
         size = max(w, h)
         ss = np.array([0.75, 0.75, 0.75, 0.75])
-        # pdb.set_trace()
 
         left = x_center - ss[0] * size
         right = x_center + ss[1] * size
@@ -276,7 +264,6 @@ if __name__ == '__main__':
 
     if num_faces > 0:
         model.img = torch.cat(input_tensor_list, dim=0).to(model.device)
-        # model.img_raw = torch.cat(input_tensor_raw_list, dim=0).to(model.device)
         with torch.no_grad():
             _, seg_pred, _, _ = model.netR.cnn(model.img)
             bs = seg_pred.shape[0]
@@ -321,7 +308,6 @@ if __name__ == '__main__':
     inst_shape = verts3d_pred / 9.0
     verts3d_pred = inst_shape.cpu().numpy().reshape(-1, 1220, 3)
     assign_mat = F.softmax(assign_mat, dim=2)
-    # pdb.set_trace()
     nocs_coords = torch.bmm(assign_mat, inst_shape)
     nocs_coords = nocs_coords.detach().cpu().numpy().reshape(-1, opt.n_pts, 3)
 
@@ -334,8 +320,6 @@ if __name__ == '__main__':
         local_pts2d = np.concatenate((col_idx.reshape(-1, 1), row_idx.reshape(-1, 1)), axis=1)
 
         tform_inv = tform_inv_list[i]
-        # pts68_pred = pts68_pred_list[i]
-        # verts3d_pred = verts3d_pred_list[i]
 
         W, b = tform_inv.T[:2], tform_inv.T[2]
         global_pts68_pred = local_pts2d @ W + b
@@ -353,13 +337,12 @@ if __name__ == '__main__':
         rotM = cv2.Rodrigues(rvecs)[0].T
         tvecs = tvecs.squeeze(axis=1)
 
-        # 还原回GL格式
+        # to GL style
         R_temp = np.identity(4)
         R_temp[:3, :3] = rotM
         R_temp[3, :3] = tvecs
         R_t_pred = R_temp @ T
 
-        # pdb.set_trace()
         temp3 = renderer(verts3d_pred[i], R_t_pred, temp3)
 
     temp2 = temp2[:, :, :: -1]

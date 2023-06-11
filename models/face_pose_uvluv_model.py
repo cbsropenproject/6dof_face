@@ -16,7 +16,6 @@ from torchvision.models.resnet import BasicBlock
 
 from . import networks
 from .base_model import BaseModel
-#from .resnet_related import MyResNet
 from .network import DeformNetUV2
 from .loss import Loss8
 from util.face_deformnet_utils import compute_sRT_errors
@@ -49,7 +48,7 @@ class FacePoseUVluvModel(BaseModel):
         self.grid = torch.tensor(uv_coords).unsqueeze(0).unsqueeze(1).to(self.device)
 
 
-        # 没有调用networks.init_net，但好像没关系
+        # networks.init_net
         self.netR = networks.init_net(
             DeformNetUV2(self.grid),
             gpu_ids=self.gpu_ids
@@ -59,7 +58,6 @@ class FacePoseUVluvModel(BaseModel):
         if self.isTrain:
             self.optimizer_R = torch.optim.Adam(self.netR.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_R)
-        #self.opt=opt
         
 
 
@@ -79,26 +77,17 @@ class FacePoseUVluvModel(BaseModel):
 
 
     def forward(self):
-        #pdb.set_trace()
         #print(self.choose.max(),self.choose.min())
         self.assign_mat, self.seg_pred, self.uv_pred = self.netR(self.img, self.choose)   ### assign_mat, deltas, seg_pred
-        # print(self.seg_pred.size())
-        # print('ass',self.assign_mat)
-        # print('cor',self.corr_mat)
         bs = self.uv_pred.size(0)
         verts3d_pred = F.grid_sample(self.uv_pred, self.grid.expand(bs, -1, -1, -1), align_corners=False)   # 低版本pytorch没有align_corners=False这个选项
         self.verts3d_pred = verts3d_pred.squeeze(2).permute(0, 2, 1).contiguous()
-        
-        
-
+             
     def forward_seg(self): 
         _, self.seg_pred, _, _=self.netR.module.cnn(self.img)
 
 
     def backward_R(self):
-        #self.loss_pts68 = self.criterion(self.out1, self.label1)
-        #self.loss_verts3d = self.criterion(self.out2, self.label2) * 1.5
-        #self.loss_total = self.loss_pts68 + self.loss_verts3d
         self.loss_total, self.loss_corr, self.loss_recon3d, self.loss_uv, self.loss_mat, self.loss_seg  = self.criterion(self.assign_mat, self.seg_pred, self.verts3d_pred, self.uv_pred, self.nocs, self.model, self.mask, self.corr_mat,self.uvmap)
         self.loss_total.backward()
 
@@ -108,15 +97,10 @@ class FacePoseUVluvModel(BaseModel):
     def optimize_parameters(self):
         self.netR.train()
         self.forward()
-
         self.optimizer_R.zero_grad() 
         self.backward_R()
         self.optimizer_R.step()
-
-
-
-        
-
+   
 
     def init_evaluation(self):
         self.inference_data = {
@@ -139,7 +123,6 @@ class FacePoseUVluvModel(BaseModel):
         bs = self.img.size(0)
         with torch.no_grad(): 
             if self.opt.seg:
-                #pdb.set_trace()
                 self.forward_seg()
                 mask_pr = torch.argmax(self.seg_pred, 1).cpu().detach().numpy()
                 chooses=np.zeros((bs,self.opt.n_pts))
@@ -158,7 +141,6 @@ class FacePoseUVluvModel(BaseModel):
             self.forward()
 
         cur_loss_total, cur_loss_corr, cur_loss_recon3d, cur_loss_uv, cur_loss_mat, cur_loss_seg = self.criterion(self.assign_mat, self.seg_pred, self.verts3d_pred, self.uv_pred, self.nocs, self.model, self.mask, self.corr_mat, self.uvmap)
-        #cur_loss_verts3d = self.criterion(self.out2, self.label2).item() * 1.5
         self.inference_data['loss_total'].append(cur_loss_total.item())
         self.inference_data['loss_corr'].append(cur_loss_corr.item())
         self.inference_data['loss_recon3d'].append(cur_loss_recon3d.item())
@@ -170,20 +152,13 @@ class FacePoseUVluvModel(BaseModel):
 
 
         if hasattr(self.opt, 'eval'):
-
-            # 3D vertices还原为原来的尺度
-            #verts3d_pred = (self.out2 / 9.0).cpu().numpy().reshape(-1, 1220, 3)
-            #verts3d_gt = (self.label2 / 9.0).cpu().numpy().reshape(-1, 1220, 3)
+            # 3D vertices
             inst_shape=self.verts3d_pred/9.0
             verts3d_pred = inst_shape.cpu().numpy().reshape(-1, 1220, 3)
             verts3d_gt = (self.model).cpu().numpy().reshape(-1, 1220, 3)
-
-
-
-            # 2D点还原为整图下的坐标（通过for循环处理）
+           
             #pts68_pred = ((self.out1 * 0.5 + 0.5) * self.opt.img_size).cpu().numpy().reshape(-1, 68, 2)
             assign_mat = F.softmax(self.assign_mat, dim=2)
-            #pdb.set_trace()
             nocs_coords = torch.bmm(assign_mat, inst_shape)
             nocs_coords = nocs_coords.detach().cpu().numpy().reshape(-1, self.opt.n_pts, 3)
 
@@ -232,14 +207,14 @@ class FacePoseUVluvModel(BaseModel):
                 rotM = cv2.Rodrigues(rvecs)[0].T
                 tvecs = tvecs.squeeze(axis=1)
 
-                # 还原回GL格式
+                # GL
                 R_temp = np.identity(4)
                 R_temp[:3, :3] = rotM
                 R_temp[3, :3] = tvecs
                 R_t_pred = R_temp @ T
 
 
-                # 处理pnp失败的情况
+                # pnp
                 if R_t_pred[3, 2] > 0:
                     print('【pnp_fail tz_pred > 0】', self.img_path_list[i])
                     self.inference_data['pnp_fail'] += 1
@@ -254,12 +229,6 @@ class FacePoseUVluvModel(BaseModel):
                 R_t_gt = self.R_t_list[i]
                 img_path = self.img_path_list[i]
 
-                #info_path = img_path.replace('image','info').replace('ar.jpg','info.npz')
-                #copyfile(img_path,'./data/results/'+str(i)+'.jpg')
-                #copyfile(info_path,'./data/results/'+str(i)+'.npz')
-
-                #save_path='./data/results/pred_'+str(i)+'.npz'
-                #np.savez(save_path,  verts3d_pred[i],R_t_pred)
                 yaw_gt, pitch_gt, roll_gt = Rotation.from_matrix(R_t_gt[:3, :3].T).as_euler('yxz', degrees=True)
                 yaw_pred, pitch_pred, roll_pred = Rotation.from_matrix(R_t_pred[:3, :3].T).as_euler('yxz', degrees=True)
 
@@ -282,14 +251,11 @@ class FacePoseUVluvModel(BaseModel):
                 self.inference_data['ty_mae'].append(cur_ty_mae)
                 self.inference_data['tz_mae'].append(cur_tz_mae)
 
-
-                # 计算3DRecon指标
+                # 3DRecon
                 cur_3drecon = np.sqrt(((verts3d_pred[i] - verts3d_gt[i]) ** 2).sum(axis=1)).mean()
                 self.inference_data['3DRecon'].append(cur_3drecon)
 
-
-
-                # 计算ADD指标
+                # ADD
                 verts_origin = verts3d_gt[i]
                 ones = np.ones([verts_origin.shape[0], 1])
                 verts_homo = np.concatenate([verts_origin, ones], axis=1)
@@ -300,10 +266,7 @@ class FacePoseUVluvModel(BaseModel):
                 cur_ADD = np.sqrt(np.sum((verts_cam_pred[:, :3] - verts_cam_gt[:, :3]) ** 2, 1)).mean()
                 self.inference_data['ADD'].append(cur_ADD)
 
-
-
-
-                # 计算IOU, 5°5cm, 10°5cm
+                # IOU, 5°5cm, 10°5cm
                 R_error, T_error, IoU = compute_sRT_errors(R_t_pred.T, R_t_gt.T)
                 if R_error < 5 and T_error < 0.05:
                      self.inference_data['strict_success'] += 1

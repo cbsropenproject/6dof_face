@@ -171,7 +171,6 @@ def correct_resize(t, size, mode=Image.BICUBIC):
 def landmarks106to68(lms):
     idx = list(range(0, 33, 2)) + list(range(33, 64)) + list(range(84, 104))
     lms_68 = lms[idx]
-    # 稍做修正
     factor = 0.6
     lms_68[37] = lms[53] * factor + lms[72] * (1 - factor)
     lms_68[38] = lms[54] * factor + lms[72] * (1 - factor)

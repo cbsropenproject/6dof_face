@@ -5,10 +5,8 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from pathlib import Path
-
 import torch
 import torchvision.transforms as transforms
-
 from data.base_dataset import BaseDataset
 from data.augmentation import EulerAugmentor, HorizontalFlipAugmentor
 from util.util import landmarks106to68
@@ -16,25 +14,18 @@ from lib import mesh
 from lib import mesh_ori
 from lib.eyemouth_index import vert_index, face_em
 from ARKit_utils.mesh import render
-
 import time
 
 use_jpeg4py = False
-
 data_root = Path('/home/xumiao/data1/ARKitFace')
-
-
-# npz_path = 'kpt_ind_202107.npy'
 npz_path = 'npy/kpt_ind.npy'
 kpt_ind = np.load(npz_path)
 
 npy_path = 'npy/uv_coords_std_202109.npy'
-uv_coords_std = np.load(npy_path)   # (1279, 2)，范围[0, 1]
-
+uv_coords_std = np.load(npy_path)   # (1279, 2)，[0, 1]
 
 npy_path = 'npy/tris_2500x3_202110.npy'
 tris_full = np.load(npy_path)
-
 
 npy_path = 'npy/tris_2388x3.npy'
 tris_mask = np.load(npy_path)
@@ -43,11 +34,8 @@ txt_path = 'npy/projection_matrix.txt'
 M_proj = np.loadtxt(txt_path, dtype=np.float32)
 
 
-
 class ARKitNewDataset(BaseDataset):
-
     def __init__(self, opt):
-
         self.data_root = data_root
         self.opt = opt
         self.is_train = opt.isTrain
@@ -83,19 +71,9 @@ class ARKitNewDataset(BaseDataset):
             [opt.img_size - 1, 0]
         ])
 
-        # if self.is_train:
-            # self.euler_aug = EulerAugmentor(data_root)
-            #self.flip_aug = HorizontalFlipAugmentor()
-
-
-        #self.mean_shapes =np.expand_dims(np.load('./data/vertex_params_mean.npy'), axis=0)
-        #self.mean_shapes = np.load('./data/vertex_params_mean.npy')
         self.faces=np.load('./data/triangles.npy')
-        
-        
-        ############ uv map相关 ############
-
-        # 为UV坐标加一个z坐标，可以看作一种被压扁的verts
+              
+        ############ uv map ############
         self.uv_size = self.img_size
         uv_coords = uv_coords_std * (self.uv_size - 1)
         zeros = np.zeros([uv_coords.shape[0], 1])
@@ -117,7 +95,6 @@ class ARKitNewDataset(BaseDataset):
                 1069, 1068, 1067, 1066, 1065, 1064, 1063, 1062, 1061, 1084, 1083, 1082]
         self.tris_mask = tris_mask
 
-
     def generate_uv_position_map(self, verts):
         temp1 = verts[self.contour_ind] * 1.1
         temp2 = verts[self.mouth_ind].mean(axis=0, keepdims=True)
@@ -128,11 +105,8 @@ class ARKitNewDataset(BaseDataset):
         uv_map = np.clip(uv_map, 0, 1)
         return uv_map
 
-
     def get_item(self, index):
         try:
-        #if 1:
-
             if self.is_train:
                 index =self.rnd[index]
             subject_id = str(self.df['subject_id'][index])
@@ -149,13 +123,11 @@ class ARKitNewDataset(BaseDataset):
             model = M['verts']
             R_t = M['R_t']
 
-
             img_raw = cv2.imread(img_path)
             img_raw = cv2.cvtColor(img_raw, cv2.COLOR_BGR2RGB)
             img_h, img_w, _ = img_raw.shape
 
-
-            # 数据增强
+            # data aug
             if self.is_train:
                 if np.random.rand() > 0.5:
                     img_raw, M = self.euler_aug(img_raw, M)
@@ -163,12 +135,9 @@ class ARKitNewDataset(BaseDataset):
                    img_raw, M = self.flip_aug(img_raw, M)
             
             ###render for coord and mask
-
             ones = np.ones([model.shape[0], 1])
             verts_homo = np.concatenate([model, ones], axis=1)
-
             assert R_t[3, 2] < 0  # tz is always negative
-
             M1 = np.array([
                 [img_w / 2, 0, 0, 0],
                 [0, img_h / 2, 0, 0],
@@ -182,41 +151,27 @@ class ARKitNewDataset(BaseDataset):
             image_vertices = verts / z
             image_vertices[:, 2] = -z[:, 0]
             image_vertices = image_vertices[:,:3]
-
             tx, ty, tz = R_t[3, :3]
             tz = -tz
             
-
-            
-
-            # #### glass augment
-            # if np.random.rand() >= 0.6 and self.is_train:
-            #     landmarks = image_vertices[self.kpt_ind,0:2]
-            #     img_raw = self.glassesaugmentor.process(img_raw, landmarks)
-
-
             attribute = (model*4.5+0.5)*255
             coord, corr_weight = mesh.render.render_colors(image_vertices, self.faces, attribute, img_h, img_w, c=3)
             coord = coord/255.0
             
-
             att = np.ones((1220,1))
             att[vert_index] = 0
             tris_organ = vert_index[face_em]
             triangles = np.concatenate((self.faces, tris_organ), axis=0)
             mask = mesh_ori.render.render_colors(image_vertices, triangles, att, img_h, img_w, c=1)
             mask = (np.squeeze(mask)>0).astype(np.uint8)
-            
-
-            
-
+                     
             roi_cnt = 0.5*(np.max(image_vertices[self.kpt_ind,:],0)[0:2] + np.min(image_vertices[self.kpt_ind,:],0)[0:2])
             size = np.max(np.max(image_vertices[self.kpt_ind,:],0)[0:2] - np.min(image_vertices[self.kpt_ind,:],0)[0:2])
             x_center = roi_cnt[0]
             y_center = roi_cnt[1]
             ss = np.array([0.75, 0.75, 0.75, 0.75])
 
-            # 对center做随机扰动
+            # center
             if self.is_train:
                 rnd_size = 0.15 * size
                 dx = np.random.uniform(-rnd_size, rnd_size)
@@ -228,7 +183,6 @@ class ARKitNewDataset(BaseDataset):
             right = int(x_center + ss[1] * size)
             top = int(y_center - ss[2] * size)
             bottom = int(y_center + ss[3] * size)
-
 
             src_pts = np.float32([
                 [left, top],
@@ -246,11 +200,9 @@ class ARKitNewDataset(BaseDataset):
             else:
                 img = self.tfm_test(Image.fromarray(img))
                 img_raw = self.tfm_test(Image.fromarray(img_raw))
-                
-                
+                              
             ### sample points
             choose = mask[top:bottom+1, left:right+1].flatten().nonzero()[0]
-
 
             #print(len(choose))
             if len(choose) > self.n_pts:
@@ -279,8 +231,6 @@ class ARKitNewDataset(BaseDataset):
             point2d = np.concatenate((col_idx.reshape(-1,1), row_idx.reshape(-1,1)), axis=1)
             #print(W,b)
             point2d = point2d @ W + b
-            #col_idx = col_idx *W[0] + b
-            #row_idy = row_idy *W[1] + b
             choose = (np.floor(point2d[:,1])  * self.img_size + np.floor(point2d[:,0])).astype(np.int64)
             if choose.max()>self.img_size*self.img_size-1:
                 choose[choose>self.img_size*self.img_size-1] = np.random.randint(0,self.img_size*self.img_size)
@@ -289,8 +239,6 @@ class ARKitNewDataset(BaseDataset):
                 choose[choose<0] = np.random.randint(0,self.img_size*self.img_size)
 
             ##### choose to full pic
-            # choose_raw = choose * self.img_size*2 / 800
-            # choose_raw = (choose // 800 * self.img_size * 2 / 800 - 1) * self.img_size * 2 + (choose % 800 * self.img_size * 2 / 800)
             a = choose // 192
             b = choose - a * 192
             x = b / 192 * (right - left)
@@ -311,18 +259,9 @@ class ARKitNewDataset(BaseDataset):
             mask = torch.tensor(np.array(mask>0).astype(np.int64))
             nocs = torch.tensor(nocs.astype(np.float32))
             model = torch.tensor(model.astype(np.float32))
-            corr_mat = torch.tensor(corr_mat.astype(np.float32))
-            
-            
+            corr_mat = torch.tensor(corr_mat.astype(np.float32))  
 
-
-            # 68关键点也一同转换到local bbox下的坐标系
-       #     points2d_68 = M['points2d'][self.kpt_ind]   # 这里的68关键点，一定要是透视的版本!
-       #     W, b = tform.T[:2], tform.T[2]
-       #     local_points2d_68 = points2d_68 @ W + b
-       #     pts68 = torch.tensor(local_points2d_68, dtype=torch.float32) / self.img_size * 2 - 1  # 范围[-1, 1]
-
-            # 额外返回tform_inv
+            # tform_inv
             dst_pts2 = np.float32([
             [0, 0],
             [0, self.img_size*2 - 1],
@@ -332,13 +271,11 @@ class ARKitNewDataset(BaseDataset):
             W_inv = tform_inv.T[:2, :2].astype(np.float32)
             b_inv = tform_inv.T[2].astype(np.float32)
 
-            # world coord下的3D点
-            #verts3d = torch.tensor(M['verts_gt'], dtype=torch.float32) * 4.5 * 2   # 范围[-0.111, 0.111] -> [-1, 1]
-            ############ uv map相关 ############
-            # 生成UV position map
-            verts = M['verts'] * 4.5 + 0.5     # 范围[-0.111, 0.111] -> [0, 1]
+            ############ uv map ############
+            # UV position map
+            verts = M['verts'] * 4.5 + 0.5     # [-0.111, 0.111] -> [0, 1]
             uvmap = self.generate_uv_position_map(verts)
-            uvmap = uvmap * 2 - 1     # 范围[0, 1] -> [-1, 1]
+            uvmap = uvmap * 2 - 1     # [0, 1] -> [-1, 1]
             uvmap = torch.tensor(uvmap, dtype=torch.float32).permute(2, 0, 1)
 
             d = {
@@ -363,7 +300,6 @@ class ARKitNewDataset(BaseDataset):
 
             if hasattr(self.opt, 'eval'):
                 tform_inv = cv2.getAffineTransform(self.dst_pts, src_pts)
-                #R_t = M['faceAnchortransform'] @ np.linalg.inv(M['cameratransform'])
                 R_t = M['R_t']
                 d['tform_inv'] = tform_inv
                 d['R_t'] = R_t.T
@@ -412,7 +348,6 @@ class ARKitNewDataset(BaseDataset):
             'loss_uv': loss_uv,
             'loss_mat': loss_mat,
             'loss_seg': loss_seg,
-            # 'loss_tz': loss_tz
         }
         if hasattr(self.opt, 'eval'):
             d['pnp_fail'] = inference_data['pnp_fail']
@@ -430,7 +365,7 @@ class ARKitNewDataset(BaseDataset):
             d['5°10cm'] = inference_data['easy_success'] / inference_data['total_count']
             d['mean_IoU'] = np.mean(inference_data['IoU'])
 
-            # 单位转换
+            # 
             d['3DRecon'] = '%.2f mm' % (d['3DRecon'] * 1000)
             d['ADD'] = '%.2f mm' % (d['ADD'] * 1000)
             d['pitch_mae'] = '%.2f °' % d['pitch_mae']
