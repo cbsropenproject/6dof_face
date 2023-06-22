@@ -13,11 +13,12 @@ from util.util import landmarks106to68
 from lib import mesh
 from lib import mesh_ori
 from lib.eyemouth_index import vert_index, face_em
-from ARKit_utils.mesh import render
 import time
 
 use_jpeg4py = False
-data_root = Path('/home/xumiao/data1/ARKitFace')
+
+data_root = Path('./dataset')
+
 npz_path = 'npy/kpt_ind.npy'
 kpt_ind = np.load(npz_path)
 
@@ -26,15 +27,13 @@ uv_coords_std = np.load(npy_path)   # (1279, 2)，[0, 1]
 
 npy_path = 'npy/tris_2500x3_202110.npy'
 tris_full = np.load(npy_path)
-
 npy_path = 'npy/tris_2388x3.npy'
 tris_mask = np.load(npy_path)
-
 txt_path = 'npy/projection_matrix.txt'
 M_proj = np.loadtxt(txt_path, dtype=np.float32)
 
 
-class ARKitNewDataset(BaseDataset):
+class ARKitDataset(BaseDataset):
     def __init__(self, opt):
         self.data_root = data_root
         self.opt = opt
@@ -49,10 +48,7 @@ class ARKitNewDataset(BaseDataset):
             self.df = pd.read_csv(opt.csv_path_test, dtype={'subject_id': str, 'facial_action': str, 'img_id': str},
                 nrows=1394 if opt.debug else None)
 
-
-        #img_mean = np.array([0.5, 0.5, 0.5])
         img_mean = np.array([0.485, 0.456, 0.406])
-        #img_std = np.array([0.5, 0.5, 0.5])
         img_std = np.array([0.229, 0.224, 0.225])
         self.tfm_train = transforms.Compose([
             transforms.ColorJitter(0.3, 0.3, 0.2, 0.01),
@@ -71,8 +67,7 @@ class ARKitNewDataset(BaseDataset):
             [opt.img_size - 1, 0]
         ])
 
-        self.faces=np.load('./data/triangles.npy')
-              
+        self.faces=np.load('./data/triangles.npy')              
         ############ uv map ############
         self.uv_size = self.img_size
         uv_coords = uv_coords_std * (self.uv_size - 1)
@@ -101,7 +96,7 @@ class ARKitNewDataset(BaseDataset):
         temp3 = verts[self.eye1_ind].mean(axis=0, keepdims=True)
         temp4 = verts[self.eye2_ind].mean(axis=0, keepdims=True)
         verts_ = np.vstack([verts, temp1, temp2, temp3, temp4])  # (1279, 3)
-        uv_map = render.render_colors(self.uv_coords_extend, self.tris_full, verts_, h=self.uv_size, w=self.uv_size, c=3)   # 范围[0, 1]
+        uv_map = mesh_ori.render.render_colors(self.uv_coords_extend, self.tris_full, verts_, h=self.uv_size, w=self.uv_size, c=3)   # 范围[0, 1]
         uv_map = np.clip(uv_map, 0, 1)
         return uv_map
 
@@ -111,14 +106,12 @@ class ARKitNewDataset(BaseDataset):
                 index =self.rnd[index]
             subject_id = str(self.df['subject_id'][index])
             facial_action = str(self.df['facial_action'][index])
-            img_id = str(self.df['img_id'][index])
-            
+            img_id = str(self.df['img_id'][index])            
             img_path = self.data_root / 'image' / subject_id / facial_action / f'{img_id}_ar.jpg'
             npz_path = self.data_root / 'info' / subject_id / facial_action / f'{img_id}_info.npz'
             img_path = str(img_path)
             npz_path = str(npz_path)
-            M = np.load(npz_path)
-            
+            M = np.load(npz_path)            
             ###3d model and mean shape
             model = M['verts']
             R_t = M['R_t']
@@ -126,17 +119,11 @@ class ARKitNewDataset(BaseDataset):
             img_raw = cv2.imread(img_path)
             img_raw = cv2.cvtColor(img_raw, cv2.COLOR_BGR2RGB)
             img_h, img_w, _ = img_raw.shape
-
-            # data aug
-            if self.is_train:
-                if np.random.rand() > 0.5:
-                    img_raw, M = self.euler_aug(img_raw, M)
-                if np.random.rand() > 0.5:
-                   img_raw, M = self.flip_aug(img_raw, M)
             
             ###render for coord and mask
             ones = np.ones([model.shape[0], 1])
             verts_homo = np.concatenate([model, ones], axis=1)
+
             assert R_t[3, 2] < 0  # tz is always negative
             M1 = np.array([
                 [img_w / 2, 0, 0, 0],
@@ -144,7 +131,6 @@ class ARKitNewDataset(BaseDataset):
                 [0, 0, 1, 0],
                 [img_w / 2, img_h / 2, 0, 1]
             ])
-
             # world space -> camera space -> NDC space -> image space
             verts = verts_homo @ R_t @ M_proj @ M1
             z = verts[:, [3]]
@@ -152,8 +138,7 @@ class ARKitNewDataset(BaseDataset):
             image_vertices[:, 2] = -z[:, 0]
             image_vertices = image_vertices[:,:3]
             tx, ty, tz = R_t[3, :3]
-            tz = -tz
-            
+            tz = -tz           
             attribute = (model*4.5+0.5)*255
             coord, corr_weight = mesh.render.render_colors(image_vertices, self.faces, attribute, img_h, img_w, c=3)
             coord = coord/255.0
@@ -164,7 +149,7 @@ class ARKitNewDataset(BaseDataset):
             triangles = np.concatenate((self.faces, tris_organ), axis=0)
             mask = mesh_ori.render.render_colors(image_vertices, triangles, att, img_h, img_w, c=1)
             mask = (np.squeeze(mask)>0).astype(np.uint8)
-                     
+                 
             roi_cnt = 0.5*(np.max(image_vertices[self.kpt_ind,:],0)[0:2] + np.min(image_vertices[self.kpt_ind,:],0)[0:2])
             size = np.max(np.max(image_vertices[self.kpt_ind,:],0)[0:2] - np.min(image_vertices[self.kpt_ind,:],0)[0:2])
             x_center = roi_cnt[0]
@@ -200,10 +185,10 @@ class ARKitNewDataset(BaseDataset):
             else:
                 img = self.tfm_test(Image.fromarray(img))
                 img_raw = self.tfm_test(Image.fromarray(img_raw))
-                              
+                
+                
             ### sample points
             choose = mask[top:bottom+1, left:right+1].flatten().nonzero()[0]
-
             #print(len(choose))
             if len(choose) > self.n_pts:
                 c_mask = np.zeros(len(choose), dtype=int)
@@ -213,6 +198,14 @@ class ARKitNewDataset(BaseDataset):
             else:
                 choose = np.pad(choose, (0, self.n_pts-len(choose)), 'wrap')
 
+            ##### choose to full pic
+            choose_raw = choose * self.img_size*2 / 800
+            choose_raw = choose_raw.astype(np.int64)
+            if choose_raw.max() > self.img_size*2 * self.img_size*2 - 1:
+                choose_raw[choose_raw > self.img_size*2 * self.img_size*2 - 1] = np.random.randint(0, self.img_size*2 * self.img_size*2)
+
+            if choose_raw.min() < 0:
+                choose_raw[choose_raw < 0] = np.random.randint(0, self.img_size*2 * self.img_size*2)
 
             nocs = coord[top:bottom+1, left:right+1, :].reshape((-1, 3))[choose, :] - 0.5
             corr2d_3d = corr_weight[top:bottom+1, left:right+1, :].reshape((-1,6))[choose,:]####[id0,id1,id2,w0,w1,w2]
@@ -220,8 +213,6 @@ class ARKitNewDataset(BaseDataset):
             corr_mat[np.arange(self.n_pts),corr2d_3d[:,0].astype(np.int16)] = corr2d_3d[:,3]
             corr_mat[np.arange(self.n_pts),corr2d_3d[:,1].astype(np.int16)] = corr2d_3d[:,4]
             corr_mat[np.arange(self.n_pts),corr2d_3d[:,2].astype(np.int16)] = corr2d_3d[:,5]
-
-
 
             ##### choose to local bbox
             crop_w = right-left + 1
@@ -231,6 +222,8 @@ class ARKitNewDataset(BaseDataset):
             point2d = np.concatenate((col_idx.reshape(-1,1), row_idx.reshape(-1,1)), axis=1)
             #print(W,b)
             point2d = point2d @ W + b
+            #col_idx = col_idx *W[0] + b
+            #row_idy = row_idy *W[1] + b
             choose = (np.floor(point2d[:,1])  * self.img_size + np.floor(point2d[:,0])).astype(np.int64)
             if choose.max()>self.img_size*self.img_size-1:
                 choose[choose>self.img_size*self.img_size-1] = np.random.randint(0,self.img_size*self.img_size)
@@ -238,28 +231,12 @@ class ARKitNewDataset(BaseDataset):
             if choose.min()<0:
                 choose[choose<0] = np.random.randint(0,self.img_size*self.img_size)
 
-            ##### choose to full pic
-            a = choose // 192
-            b = choose - a * 192
-            x = b / 192 * (right - left)
-            y = a / 192 * (bottom - top)
-            x = (x + left) / 800 * 384
-            y = (y + top) / 800 * 384
-            # choose_raw[k] = (192 - y) * 192 + x
-            choose_raw = 384 * y + x
-
-            choose_raw = choose_raw.astype(np.int64)
-            if choose_raw.max() > self.img_size*2 * self.img_size*2 - 1:
-                choose_raw[choose_raw > self.img_size*2 * self.img_size*2 - 1] = np.random.randint(0, self.img_size*2 * self.img_size*2)
-
-            if choose_raw.min() < 0:
-                choose_raw[choose_raw < 0] = np.random.randint(0, self.img_size*2 * self.img_size*2)
-
             mask = cv2.warpAffine(mask, tform, (self.img_size,self.img_size))
             mask = torch.tensor(np.array(mask>0).astype(np.int64))
             nocs = torch.tensor(nocs.astype(np.float32))
             model = torch.tensor(model.astype(np.float32))
-            corr_mat = torch.tensor(corr_mat.astype(np.float32))  
+            corr_mat = torch.tensor(corr_mat.astype(np.float32))
+            
 
             # tform_inv
             dst_pts2 = np.float32([
@@ -300,9 +277,10 @@ class ARKitNewDataset(BaseDataset):
 
             if hasattr(self.opt, 'eval'):
                 tform_inv = cv2.getAffineTransform(self.dst_pts, src_pts)
+                #R_t = M['faceAnchortransform'] @ np.linalg.inv(M['cameratransform'])
                 R_t = M['R_t']
                 d['tform_inv'] = tform_inv
-                d['R_t'] = R_t.T
+                d['R_t'] = R_t
                 d['img_path'] = str(img_path)
                 #d['data_batch'] = str(data_batch)
                 d['subjectid'] = str(subject_id)
@@ -310,7 +288,6 @@ class ARKitNewDataset(BaseDataset):
                 d['facial_action'] = str(facial_action)
 
             return d
-        #else:
         except:
             print(self.df['img_id'][index],'error!')
             return None
@@ -325,8 +302,6 @@ class ARKitNewDataset(BaseDataset):
     def __len__(self):
         return len(self.df)
 
-
-
     def compute_metrics(self, inference_data):
         bs_list = np.array(inference_data['batch_size'])
         loss1 = np.array(inference_data['loss_total'])
@@ -335,12 +310,14 @@ class ARKitNewDataset(BaseDataset):
         loss4 = np.array(inference_data['loss_uv'])
         loss5 = np.array(inference_data['loss_mat'])
         loss6 = np.array(inference_data['loss_seg'])
+        # loss7 = np.array(inference_data['loss_tz'])
         loss_total = (loss1 * bs_list).sum() / bs_list.sum() 
         loss_corr = (loss2 * bs_list).sum() / bs_list.sum() 
         loss_recon3d = (loss3 * bs_list).sum() / bs_list.sum()
         loss_uv = (loss4 * bs_list).sum() / bs_list.sum()
         loss_mat = (loss5 * bs_list).sum() / bs_list.sum()
         loss_seg = (loss6 * bs_list).sum() / bs_list.sum()
+        # loss_tz = (loss7 * bs_list).sum() / bs_list.sum()
         d = {
             'loss_total': loss_total,
             'loss_corr': loss_corr,
@@ -365,7 +342,6 @@ class ARKitNewDataset(BaseDataset):
             d['5°10cm'] = inference_data['easy_success'] / inference_data['total_count']
             d['mean_IoU'] = np.mean(inference_data['IoU'])
 
-            # 
             d['3DRecon'] = '%.2f mm' % (d['3DRecon'] * 1000)
             d['ADD'] = '%.2f mm' % (d['ADD'] * 1000)
             d['pitch_mae'] = '%.2f °' % d['pitch_mae']

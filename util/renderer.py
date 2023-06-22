@@ -4,7 +4,7 @@ import socket
 import numpy as np
 from pathlib import Path
 
-from ARKit_utils.Sim3DR import RenderPipeline
+from lib.Sim3DR import RenderPipeline
 ip = socket.gethostbyname(socket.gethostname())
 
 def _to_ctype(arr):
@@ -28,7 +28,7 @@ render_app = RenderPipeline(**cfg)
 class Renderer(object):
 
     def __init__(self, img_size=800, alpha=0.7):
-        npy_path = '/home/xumiao/usb/code/open/npy/tris_2500x3_202110.npy'
+        npy_path = './npy/tris_2500x3_202110.npy'
         tris = np.load(npy_path)[:2304]
         tris[:, [0, 1]] = tris[:, [1, 0]]
         self.tris = np.ascontiguousarray(tris.astype(np.int32))  # (2304, 3)

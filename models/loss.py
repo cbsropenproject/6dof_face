@@ -57,7 +57,7 @@ class Loss(nn.Module):
         entropy_loss = torch.mean(-torch.sum(soft_assign * log_assign, 2))
         entropy_loss = 0.001 * entropy_loss
 
-        #uv_loss= self.UVloss(uv_pred, uv_gt)*self.uv_wt
+        uv_loss= self.UVloss(uv_pred, uv_gt)*self.uv_wt
         l1_loss= self.UVloss(ver3d_pred, model*9.0)
 
         l1_loss = self.l1_wt * l1_loss
@@ -66,7 +66,6 @@ class Loss(nn.Module):
         seg_loss =self.seg_wt * seg_loss.mean()
 
         # total loss
-        #total_loss = corr_loss + uv_loss + l1_loss + kl_loss + seg_loss+ entropy_loss
         total_loss = corr_loss + l1_loss + kl_loss + seg_loss+ entropy_loss
         return total_loss, corr_loss, l1_loss, uv_loss, kl_loss, seg_loss
 

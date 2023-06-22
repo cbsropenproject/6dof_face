@@ -20,13 +20,8 @@ from .network import DeformNetUV2
 from .loss import Loss
 from util.face_deformnet_utils import compute_sRT_errors
 from shutil import copyfile
-import pdb
 
 np.set_printoptions(suppress=True)
-
-
-
-
 class PerspnetModel(BaseModel):
 
     ''' 

@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
 from .model_repository import Resnet18_8s
-#from .resnet_related import MyResNet
 import math
-#from .layers import GraphConvolution
-import pdb
 import torch.nn.functional as F
 
 class DeformNetUV2(nn.Module):
