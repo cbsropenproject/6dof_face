@@ -153,10 +153,10 @@ def det_net(img):
 
     return dets
 
-npz_path = '/home/xumiao/usb/code/open/npy/kpt_ind.npy'
+npz_path = './npy/kpt_ind.npy'
 kpt_ind = np.load(npz_path)
 
-npy_path = '/home/xumiao/usb/code/open/npy/uv_coords_std_202109.npy'
+npy_path = './npy/uv_coords_std_202109.npy'
 uv_coords_std = np.load(npy_path)[:1220]
 uv_coords = uv_coords_std * 2 - 1
 grid = torch.tensor(uv_coords).unsqueeze(0).unsqueeze(1).to('cuda')
