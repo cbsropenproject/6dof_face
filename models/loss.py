@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pdb
 
-class Loss8(nn.Module):
+
+class Loss(nn.Module):
     def __init__(self, corr_wt=1.0, l1_wt=1.0, uv_wt=1.0, mat_wt=0.1, seg_wt=0.1):
-        super(Loss8, self).__init__()
+        super(Loss, self).__init__()
         self.threshold = 0.01
         self.SegLoss=nn.CrossEntropyLoss(reduce=False)
         self.UVloss = torch.nn.L1Loss()

@@ -17,7 +17,7 @@ from torchvision.models.resnet import BasicBlock
 from . import networks
 from .base_model import BaseModel
 from .network import DeformNetUV2
-from .loss import Loss8
+from .loss import Loss
 from util.face_deformnet_utils import compute_sRT_errors
 from shutil import copyfile
 import pdb
@@ -27,7 +27,7 @@ np.set_printoptions(suppress=True)
 
 
 
-class FacePoseUVluvModel(BaseModel):
+class PerspnetModel(BaseModel):
 
     ''' 
     @staticmethod
@@ -54,7 +54,7 @@ class FacePoseUVluvModel(BaseModel):
             gpu_ids=self.gpu_ids
         )
         #self.netR.cuda()
-        self.criterion = Loss8()
+        self.criterion = Loss()
         if self.isTrain:
             self.optimizer_R = torch.optim.Adam(self.netR.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_R)

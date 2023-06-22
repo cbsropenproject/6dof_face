@@ -5,7 +5,7 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 import numpy as np
-from .stylegan_networks import StyleGAN2Discriminator, StyleGAN2Generator, TileStyleGAN2Discriminator
+#from .stylegan_networks import StyleGAN2Discriminator, StyleGAN2Generator, TileStyleGAN2Discriminator
 
 ###############################################################################
 # Helper Functions
