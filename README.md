@@ -16,7 +16,7 @@ This repository contains the official PyTorch implementation of:
    * Python = 3.7
    * PyTorch >= 1.7.1 
  
-   # install other dependencies
+ **install other dependencies**
    pip install -r requirement.txt
 
 **Install libs**
