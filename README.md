@@ -12,11 +12,11 @@ This repository contains the official PyTorch implementation of:
 
 **Install libs**
 
-  1.Please follow this [instruction](lib/mesh/README.md).
+  1.Please follow this [instruction](./lib/mesh/README.md).
   
-  2. Please follow this [instruction](lib/mesh_p/README.md).
+  2. Please follow this [instruction](./lib/mesh_p/README.md).
   
-  3. Please follow this [instruction](lib/Sim3DR/README.md).
+  3. Please follow this [instruction](./lib/Sim3DR/README.md).
   
  **Setup python 3.7 environment**
  
@@ -25,7 +25,9 @@ This repository contains the official PyTorch implementation of:
 
 ## Demo
 
-coming soon
+```sh
+$ python demo.py
+```
   
 ## Download Dataset
 
@@ -38,9 +40,10 @@ coming soon
 ​	Put this model in the folder `./checkpoint/run1/latest_net_R.pth`. 
     
 **Testing**  
-    ```sh
-     $ python -u test.py --image_size=192 --model perspnet --dataset_mode arkit --csv_path_test 'test.csv'  
-    ```
+
+```sh
+$ python -u test.py --image_size=192 --model perspnet --dataset_mode arkit --csv_path_test test.csv
+```
 
 ## Citation
 
