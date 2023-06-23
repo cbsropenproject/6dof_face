@@ -14,7 +14,7 @@ cdef extern from "mesh_core.h":
         int h, int w)
 
     void _render_colors_core(
-        float* image, float* corrs, float* vertices, int* triangles, 
+        float* image, float* vertices, int* triangles, 
         float* colors, 
         float* depth_buffer,
         int nver, int ntri,
@@ -62,7 +62,6 @@ def rasterize_triangles_core(
         h, w)
 
 def render_colors_core(np.ndarray[float, ndim=3, mode = "c"] image not None, 
-                np.ndarray[float, ndim=3, mode = "c"] corrs not None,
                 np.ndarray[float, ndim=2, mode = "c"] vertices not None, 
                 np.ndarray[int, ndim=2, mode="c"] triangles not None, 
                 np.ndarray[float, ndim=2, mode = "c"] colors not None, 
@@ -71,7 +70,7 @@ def render_colors_core(np.ndarray[float, ndim=3, mode = "c"] image not None,
                 int h, int w, int c
                 ):   
     _render_colors_core(
-        <float*> np.PyArray_DATA(image), <float*> np.PyArray_DATA(corrs), <float*> np.PyArray_DATA(vertices), <int*> np.PyArray_DATA(triangles),  
+        <float*> np.PyArray_DATA(image), <float*> np.PyArray_DATA(vertices), <int*> np.PyArray_DATA(triangles),  
         <float*> np.PyArray_DATA(colors), 
         <float*> np.PyArray_DATA(depth_buffer),
         nver, ntri,

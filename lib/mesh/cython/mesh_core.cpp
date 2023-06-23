@@ -167,9 +167,8 @@ void _rasterize_triangles_core(
 
 
 void _render_colors_core(
-    float* image, float* corrs,
-    float* vertices, int* triangles,
-    float* colors,
+    float* image, float* vertices, int* triangles, 
+    float* colors, 
     float* depth_buffer,
     int nver, int ntri,
     int h, int w, int c)
@@ -227,12 +226,6 @@ void _render_colors_core(
                         }
 
                         depth_buffer[y*w + x] = p_depth;
-                        corrs[y*w*6 + x*6+ 0 ] = (float)tri_p0_ind;
-                        corrs[y*w*6 + x*6+ 1 ] = (float)tri_p1_ind;
-                        corrs[y*w*6 + x*6+ 2 ] = (float)tri_p2_ind;
-                        corrs[y*w*6 + x*6+ 3 ] =weight[0];
-                        corrs[y*w*6 + x*6+ 4 ] =weight[1];
-                        corrs[y*w*6 + x*6+ 5 ] =weight[2];
                     }
                 }
             }

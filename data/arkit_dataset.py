@@ -11,7 +11,7 @@ from data.base_dataset import BaseDataset
 from data.augmentation import EulerAugmentor, HorizontalFlipAugmentor
 from util.util import landmarks106to68
 from lib import mesh
-from lib import mesh_ori
+from lib import mesh_p
 from lib.eyemouth_index import vert_index, face_em
 import time
 
@@ -96,7 +96,7 @@ class ARKitDataset(BaseDataset):
         temp3 = verts[self.eye1_ind].mean(axis=0, keepdims=True)
         temp4 = verts[self.eye2_ind].mean(axis=0, keepdims=True)
         verts_ = np.vstack([verts, temp1, temp2, temp3, temp4])  # (1279, 3)
-        uv_map = mesh_ori.render.render_colors(self.uv_coords_extend, self.tris_full, verts_, h=self.uv_size, w=self.uv_size, c=3)   # 范围[0, 1]
+        uv_map = mesh.render.render_colors(self.uv_coords_extend, self.tris_full, verts_, h=self.uv_size, w=self.uv_size, c=3)   # 范围[0, 1]
         uv_map = np.clip(uv_map, 0, 1)
         return uv_map
 
@@ -140,14 +140,14 @@ class ARKitDataset(BaseDataset):
             tx, ty, tz = R_t[3, :3]
             tz = -tz           
             attribute = (model*4.5+0.5)*255
-            coord, corr_weight = mesh.render.render_colors(image_vertices, self.faces, attribute, img_h, img_w, c=3)
+            coord, corr_weight = mesh_p.render.render_colors(image_vertices, self.faces, attribute, img_h, img_w, c=3)
             coord = coord/255.0
             
             att = np.ones((1220,1))
             att[vert_index] = 0
             tris_organ = vert_index[face_em]
             triangles = np.concatenate((self.faces, tris_organ), axis=0)
-            mask = mesh_ori.render.render_colors(image_vertices, triangles, att, img_h, img_w, c=1)
+            mask = mesh.render.render_colors(image_vertices, triangles, att, img_h, img_w, c=1)
             mask = (np.squeeze(mask)>0).astype(np.uint8)
                  
             roi_cnt = 0.5*(np.max(image_vertices[self.kpt_ind,:],0)[0:2] + np.min(image_vertices[self.kpt_ind,:],0)[0:2])

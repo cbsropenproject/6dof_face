@@ -61,7 +61,6 @@ def render_colors(vertices, triangles, colors, h, w, c = 3, BG = None):
         BG: background image
     Returns:
         image: [h, w, c]. rendered image./rendering.
-        corr_mat: [h,w,nver]
     '''
 
     # initial 
@@ -71,7 +70,7 @@ def render_colors(vertices, triangles, colors, h, w, c = 3, BG = None):
         assert BG.shape[0] == h and BG.shape[1] == w and BG.shape[2] == c
         image = BG
     depth_buffer = np.zeros([h, w], dtype = np.float32, order = 'C') - 999999.
-    corr_mat = np.zeros((h, w, 6), dtype = np.float32)
+
     # change orders. --> C-contiguous order(column major)
     vertices = vertices.astype(np.float32).copy()
     triangles = triangles.astype(np.int32).copy()
@@ -79,12 +78,12 @@ def render_colors(vertices, triangles, colors, h, w, c = 3, BG = None):
     ###
     st = time()
     mesh_core_cython.render_colors_core(
-                image, corr_mat, vertices, triangles,
+                image, vertices, triangles,
                 colors,
                 depth_buffer,
                 vertices.shape[0], triangles.shape[0], 
                 h, w, c)
-    return image, corr_mat
+    return image
 
 
 def render_texture(vertices, triangles, texture, tex_coords, tex_triangles, h, w, c = 3, mapping_type = 'nearest', BG = None):
