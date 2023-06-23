@@ -41,11 +41,11 @@ class BaseOptions():
         parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
         parser.add_argument('--checkpoints_dir', type=str, default='./checkpoint', help='models are saved here')
         # model parameters
-        parser.add_argument('--model', type=str, default='face_pose_uvluv', help='chooses which model to use.')
+        parser.add_argument('--model', type=str, default='perspnet', help='chooses which model to use.')
         parser.add_argument('--init_type', type=str, default='xavier', choices=['normal', 'xavier', 'kaiming', 'orthogonal'], help='network initialization')
         parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')       
         # dataset parameters        
-        parser.add_argument('--dataset_mode', type=str, default='arkit_new', help='chooses how datasets are loaded. [unaligned | aligned | single | colorization]')
+        parser.add_argument('--dataset_mode', type=str, default='arkit', help='chooses how datasets are loaded. [unaligned | aligned | single | colorization]')
         #parser.add_argument('--direction', type=str, default='AtoB', help='AtoB or BtoA')
         parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
         parser.add_argument('--num_threads', default=6, type=int, help='# threads for loading data')
@@ -63,10 +63,6 @@ class BaseOptions():
         parser.add_argument('--verbose', action='store_true', help='if specified, print more debugging information')
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
 
-        # parameters related to StyleGAN2-based networks
-        #parser.add_argument('--stylegan2_G_num_downsampling',
-        #                    default=1, type=int,
-        #                    help='Number of downsampling layers used by StyleGAN2Generator')
 
         self.initialized = True
         return parser

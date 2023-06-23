@@ -35,7 +35,7 @@ $ python demo.py
   
 ## Download Dataset
 
-coming soon
+ coming soon
 
 ## Testing
 
@@ -46,7 +46,7 @@ coming soon
 **Testing**  
 
 ```sh
-$ python -u test.py --image_size=192 --model perspnet --dataset_mode arkit --csv_path_test test.csv
+$ python -u test.py --csv_path_test test.csv
 ```
 
 ## Citation
