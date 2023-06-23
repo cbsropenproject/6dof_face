@@ -9,19 +9,23 @@ This repository contains the official PyTorch implementation of:
 ![](assets/perspnet.png) 
 
 ## Installation
+  
+ **Setup python environment**
+ 
+   * **CUDA>=10.1** 
+   * Python = 3.7
+   * PyTorch >= 1.7.1 
+ 
+   # install other dependencies
+   pip install -r requirement.txt
 
 **Install libs**
 
-  1.Please follow this [instruction](./lib/mesh/README.md).
+  1. Please follow  `./lib/mesh/README.md`.
   
-  2. Please follow this [instruction](./lib/mesh_p/README.md).
+  2. Please follow `./lib/mesh_p/README.md`.
   
-  3. Please follow this [instruction](./lib/Sim3DR/README.md).
-  
- **Setup python 3.7 environment**
- 
-   pytorch, numpy, opencv 
-
+  3. Please follow `./lib/Sim3DR/README.md`.
 
 ## Demo
 
