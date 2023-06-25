@@ -13,13 +13,6 @@ from models import create_model
 from util.renderer import Renderer
 import torch.nn.functional as F
 
-from retinaface.models.retinaface import RetinaFace
-from retinaface.utils.box_utils import decode, decode_landm
-from retinaface.data import cfg_mnet, cfg_re50
-from retinaface.layers.functions.prior_box import PriorBox
-from retinaface.utils.nms.py_cpu_nms import py_cpu_nms
-import torch.backends.cudnn as cudnn
-
 renderer = Renderer(img_size=800)
 
 def resize_img(img, bbox, target_size=None):
@@ -58,100 +51,6 @@ def resize_img(img, bbox, target_size=None):
 
     return img_resize, bbox
 
-def check_keys(model, pretrained_state_dict):
-    ckpt_keys = set(pretrained_state_dict.keys())
-    model_keys = set(model.state_dict().keys())
-    used_pretrained_keys = model_keys & ckpt_keys
-    unused_pretrained_keys = ckpt_keys - model_keys
-    missing_keys = model_keys - ckpt_keys
-    print('Missing keys:{}'.format(len(missing_keys)))
-    print('Unused checkpoint keys:{}'.format(len(unused_pretrained_keys)))
-    print('Used keys:{}'.format(len(used_pretrained_keys)))
-    assert len(used_pretrained_keys) > 0, 'load NONE from pretrained checkpoint'
-    return True
-
-def remove_prefix(state_dict, prefix):
-    ''' Old style model is stored with all names of parameters sharing common prefix 'module.' '''
-    print('remove prefix \'{}\''.format(prefix))
-    f = lambda x: x.split(prefix, 1)[-1] if x.startswith(prefix) else x
-    return {f(key): value for key, value in state_dict.items()}
-
-def load_model(model, pretrained_path, load_to_cpu):
-    print('Loading pretrained model from {}'.format(pretrained_path))
-    if load_to_cpu:
-        pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage)
-    else:
-        device = torch.cuda.current_device()
-        pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage.cuda(device))
-    if "state_dict" in pretrained_dict.keys():
-        pretrained_dict = remove_prefix(pretrained_dict['state_dict'], 'module.')
-    else:
-        pretrained_dict = remove_prefix(pretrained_dict, 'module.')
-    check_keys(model, pretrained_dict)
-    model.load_state_dict(pretrained_dict, strict=False)
-    return model
-
-cfg_det = None
-cfg_det = cfg_re50
-
-net = RetinaFace(cfg=cfg_det, phase='test')
-net = load_model(net, './retinaface/weights/Resnet50_Final.pth', False)
-cudnn.benchmark = True
-device = torch.device("cpu" if False else "cuda")
-net = net.to(device)
-
-def det_net(img):
-
-    img = np.float32(img)
-
-    im_height, im_width, _ = img.shape
-    scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-    img -= (104.0, 117.0, 123.0)
-    img = img.transpose(2, 0, 1)
-    img = torch.from_numpy(img).unsqueeze(0)
-    img = img.to(device)
-    scale = scale.to(device)
-
-    loc, conf, landms = net(img)  # forward pass
-
-    priorbox = PriorBox(cfg_det, image_size=(im_height, im_width))
-    priors = priorbox.forward()
-    priors = priors.to(device)
-    prior_data = priors.data
-    boxes = decode(loc.data.squeeze(0), prior_data, cfg_det['variance'])
-    boxes = boxes * scale
-    boxes = boxes.cpu().numpy()
-    scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
-    landms = decode_landm(landms.data.squeeze(0), prior_data, cfg_det['variance'])
-    scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                           img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                           img.shape[3], img.shape[2]])
-    scale1 = scale1.to(device)
-    landms = landms * scale1
-    landms = landms.cpu().numpy()
-
-    # ignore low scores
-    inds = np.where(scores > 0.02)[0]
-    boxes = boxes[inds]
-    landms = landms[inds]
-    scores = scores[inds]
-
-    # keep top-K before NMS
-    order = scores.argsort()[::-1]
-    boxes = boxes[order]
-    landms = landms[order]
-    scores = scores[order]
-
-    # do NMS
-    dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-    keep = py_cpu_nms(dets, 0.6)
-    # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
-    dets = dets[keep, :]
-    landms = landms[keep]
-
-    dets = np.concatenate((dets, landms), axis=1)
-
-    return dets
 
 npz_path = './npy/kpt_ind.npy'
 kpt_ind = np.load(npz_path)
@@ -179,8 +78,7 @@ if __name__ == '__main__':
     img_raw = cv2.imread(str(img_path))
     img_raw = cv2.cvtColor(img_raw, cv2.COLOR_BGR2RGB)
 
-    det = det_net(img_raw)
-    bboxes = [det[0]]
+    bboxes = [[]]
     bboxes = np.array(bboxes)
     num_faces = len(bboxes)
     print('\nnum_faces =', num_faces)
