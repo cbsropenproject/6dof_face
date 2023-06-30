@@ -71,9 +71,9 @@ if __name__ == '__main__':
     model.setup(opt)
     model.netR.eval()
 
-    img_path = 'example/test.jpg'
-    save_img_r = 'example/test_r.jpg'
-    save_img_d = 'example/test_d.jpg'
+    img_path = 'assets/test.jpg'
+    save_img_r = 'assets/test_r.jpg'
+    save_img_d = 'assets/test_d.jpg'
 
     img_raw = cv2.imread(str(img_path))
     img_raw = cv2.cvtColor(img_raw, cv2.COLOR_BGR2RGB)
