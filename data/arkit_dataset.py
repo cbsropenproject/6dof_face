@@ -137,8 +137,8 @@ class ARKitDataset(BaseDataset):
             image_vertices = verts / z
             image_vertices[:, 2] = -z[:, 0]
             image_vertices = image_vertices[:,:3]
-            tx, ty, tz = R_t[3, :3]
-            tz = -tz           
+            image_vertices[:, 1] = img_h - image_vertices[:, 1]
+            
             attribute = (model*4.5+0.5)*255
             coord, corr_weight = mesh_p.render.render_colors(image_vertices, self.faces, attribute, img_h, img_w, c=3)
             coord = coord/255.0
@@ -222,8 +222,6 @@ class ARKitDataset(BaseDataset):
             point2d = np.concatenate((col_idx.reshape(-1,1), row_idx.reshape(-1,1)), axis=1)
             #print(W,b)
             point2d = point2d @ W + b
-            #col_idx = col_idx *W[0] + b
-            #row_idy = row_idy *W[1] + b
             choose = (np.floor(point2d[:,1])  * self.img_size + np.floor(point2d[:,0])).astype(np.int64)
             if choose.max()>self.img_size*self.img_size-1:
                 choose[choose>self.img_size*self.img_size-1] = np.random.randint(0,self.img_size*self.img_size)
@@ -257,22 +255,13 @@ class ARKitDataset(BaseDataset):
 
             d = {
                 'img': img,
-                'img_raw': img_raw,
-                'tz': tz,
                 'choose': choose,
-                'choose_raw': choose_raw,
                 'model': model,
                 'uvmap': uvmap,
                 'nocs': nocs,
                 'mask': mask,
                 'corr_mat': corr_mat,
-                'W_inv': W_inv,
-                'b_inv': b_inv,
-                'left': left,
-                'right': right,
-                'bottom': bottom,
-                'top': top
-
+                
             }
 
             if hasattr(self.opt, 'eval'):
@@ -350,7 +339,7 @@ class ARKitDataset(BaseDataset):
             d['tx_mae'] = '%.2f mm' % (d['tx_mae'] * 1000)
             d['ty_mae'] = '%.2f mm' % (d['ty_mae'] * 1000)
             d['tz_mae'] = '%.2f mm' % (d['tz_mae'] * 1000)
-            d['tz_duli_mae'] = '%.2f mm' % (d['tz_duli_mae'] * 1000)
+            #d['tz_duli_mae'] = '%.2f mm' % (d['tz_duli_mae'] * 1000)
             d['5°5cm'] = '%.2f ' % (d['5°5cm'] * 100)
             d['5°10cm'] = '%.2f' % (d['5°10cm'] * 100)
             d['mean_IoU'] = '%.4f' % d['mean_IoU']

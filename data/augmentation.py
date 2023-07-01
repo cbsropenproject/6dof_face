@@ -6,7 +6,7 @@ import scipy.io as sio
 from scipy.spatial import ConvexHull
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
-from lib.mesh_ori import render
+from lib.mesh import render
 
 
 class EulerAugmentor(object):

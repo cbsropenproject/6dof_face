@@ -16,7 +16,7 @@ This repository contains the official PyTorch implementation of:
    * Python = 3.7
    * PyTorch >= 1.7.1 
  
- **install other dependencies**
+ **Install other dependencies**
  
    pip install -r requirement.txt
 
@@ -30,19 +30,21 @@ This repository contains the official PyTorch implementation of:
 
 ## Demo
 
+   Download our pretraind model from [here](https://drive.google.com/file/d/1K9rAmQ7Hduz1on9SWnyLHf_ZxfLwlTOy/view?usp=drive_link) and put it in the folder `./checkpoint/run1/latest_net_R.pth`. 
+
 ```sh
 $ python demo.py
 ```
   
 ## Download Dataset
 
- coming soon
+   Please contact email cbsropenproject@outlook.com. We will send you an agreement for signing, and after our verification, the download link for ARKitFace dataset will be sent to you. Please ensure compliance with agreement and do not use this dataset for any non research purposes.
+   
+   Then put the download dataset in the folder `./dataset`. 
+   
+## Testing and training
 
-## Testing
-
-**Download our pretraind model from (link coming soon)**
-
-​	Put this model in the folder `./checkpoint/run1/latest_net_R.pth`. 
+   Download our pretraind model from [here](https://drive.google.com/file/d/1K9rAmQ7Hduz1on9SWnyLHf_ZxfLwlTOy/view?usp=drive_link) and put it in the folder `./checkpoint/run1/latest_net_R.pth`. 
     
 **Testing**  
 
@@ -50,7 +52,15 @@ $ python demo.py
 $ python -u test.py --csv_path_test test.csv
 ```
 
+**Training**  
+
+```sh
+$ python -u train.py  --csv_path_train train.csv --csv_path_test test.csv
+```
+
 ## Citation
+
+If you find our work usefull in your research, please use the following BibTex entry.
 
 ```latex
 @ARTICLE{10127617,

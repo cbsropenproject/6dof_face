@@ -72,8 +72,8 @@ if __name__ == '__main__':
     model.netR.eval()
 
     img_path = 'assets/test.jpg'
-    save_img_r = 'assets/test_r.jpg'
-    save_img_d = 'assets/test_d.jpg'
+    save_img_r = 'assets/result.jpg'
+    #save_img_d = 'assets/test_d.jpg'
 
     img_raw = cv2.imread(str(img_path))
     img_raw = cv2.cvtColor(img_raw, cv2.COLOR_BGR2RGB)
@@ -229,8 +229,8 @@ if __name__ == '__main__':
         W, b = tform_inv.T[:2], tform_inv.T[2]
         global_pts68_pred = local_pts2d @ W + b
 
-        for p in global_pts68_pred:
-            cv2.circle(temp2, (int(p[0]), int(p[1])), radius=2, color=(0, 255, 0), thickness=-1)
+       # for p in global_pts68_pred:
+        #    cv2.circle(temp2, (int(p[0]), int(p[1])), radius=2, color=(0, 255, 0), thickness=-1)
 
         _, rvecs, tvecs, _ = cv2.solvePnPRansac(
             nocs_coord,
@@ -250,11 +250,11 @@ if __name__ == '__main__':
 
         temp3 = renderer(verts3d_pred[i], R_t_pred, temp3)
 
-    temp2 = temp2[:, :, :: -1]
+    #temp2 = temp2[:, :, :: -1]
     temp3 = temp3[:, :, :: -1]
 
     cv2.imwrite(save_img_r, temp3)
-    cv2.imwrite(save_img_d, temp2)
+    #cv2.imwrite(save_img_d, temp2)
 
 
 
