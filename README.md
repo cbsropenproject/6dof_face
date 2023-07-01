@@ -38,9 +38,11 @@ $ python demo.py
   
 ## Download Dataset
 
+** Download ARKitFace dataset**
+
    Please contact email cbsropenproject@outlook.com. We will send you an agreement for signing, and after our verification, the download link for ARKitFace dataset will be sent to you. Please ensure compliance with agreement and do not use this dataset for any non research purposes.
    
-   Then put the download dataset in the folder `./dataset`. 
+   Then put the download dataset in the folder `./dataset/ARKitFace`. 
    
 ## Testing and training
 

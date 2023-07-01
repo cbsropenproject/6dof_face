@@ -17,7 +17,7 @@ import time
 
 use_jpeg4py = False
 
-data_root = Path('./dataset')
+data_root = Path('./dataset/ARKitFace')
 
 npz_path = 'npy/kpt_ind.npy'
 kpt_ind = np.load(npz_path)
@@ -96,7 +96,7 @@ class ARKitDataset(BaseDataset):
         temp3 = verts[self.eye1_ind].mean(axis=0, keepdims=True)
         temp4 = verts[self.eye2_ind].mean(axis=0, keepdims=True)
         verts_ = np.vstack([verts, temp1, temp2, temp3, temp4])  # (1279, 3)
-        uv_map = mesh.render.render_colors(self.uv_coords_extend, self.tris_full, verts_, h=self.uv_size, w=self.uv_size, c=3)   # 范围[0, 1]
+        uv_map = mesh.render.render_colors(self.uv_coords_extend, self.tris_full, verts_, h=self.uv_size, w=self.uv_size, c=3)   #[0, 1]
         uv_map = np.clip(uv_map, 0, 1)
         return uv_map
 
@@ -266,12 +266,10 @@ class ARKitDataset(BaseDataset):
 
             if hasattr(self.opt, 'eval'):
                 tform_inv = cv2.getAffineTransform(self.dst_pts, src_pts)
-                #R_t = M['faceAnchortransform'] @ np.linalg.inv(M['cameratransform'])
                 R_t = M['R_t']
                 d['tform_inv'] = tform_inv
                 d['R_t'] = R_t
                 d['img_path'] = str(img_path)
-                #d['data_batch'] = str(data_batch)
                 d['subjectid'] = str(subject_id)
                 d['imgid'] = str(img_id)
                 d['facial_action'] = str(facial_action)
@@ -299,14 +297,14 @@ class ARKitDataset(BaseDataset):
         loss4 = np.array(inference_data['loss_uv'])
         loss5 = np.array(inference_data['loss_mat'])
         loss6 = np.array(inference_data['loss_seg'])
-        # loss7 = np.array(inference_data['loss_tz'])
+       
         loss_total = (loss1 * bs_list).sum() / bs_list.sum() 
         loss_corr = (loss2 * bs_list).sum() / bs_list.sum() 
         loss_recon3d = (loss3 * bs_list).sum() / bs_list.sum()
         loss_uv = (loss4 * bs_list).sum() / bs_list.sum()
         loss_mat = (loss5 * bs_list).sum() / bs_list.sum()
         loss_seg = (loss6 * bs_list).sum() / bs_list.sum()
-        # loss_tz = (loss7 * bs_list).sum() / bs_list.sum()
+        
         d = {
             'loss_total': loss_total,
             'loss_corr': loss_corr,
