@@ -6,7 +6,7 @@ This repository contains the official PyTorch implementation of:
 
 **Toward 3D Face Reconstruction in Perspective Projection: Estimating 6DoF Face Pose From Monocular Image**   
 
-![](assets/perspnet.png) 
+![](assets/perspnet.pdf) 
 
 ## Installation
   
@@ -40,19 +40,32 @@ $ python demo.py
 
 ** Download ARKitFace dataset**
 
-   Please contact email cbsropenproject@outlook.com. We will send you an agreement for signing, and after our verification, the download link for ARKitFace dataset will be sent to you. Please ensure compliance with agreement and do not use this dataset for any non research purposes.
+   Please contact email cbsropenproject@outlook.com. We will send you an agreement for signing, and after our verification, the download link for ARKitFace dataset will be sent to you. Please ensure compliance with agreement and do not use this dataset for any non research purposes. For more information about the dataset, please refer to this [here](https://github.com/o0Helloworld0o-ustc/ECCV2022_WCPA_track2).
    
    Then put the download dataset in the folder `./dataset/ARKitFace`. 
+
+** Download BIWI dataset**
    
+  Please download the BIWI dataset from https://www.kaggle.com/datasets/kmader/biwi-kinect-head-pose-database and transform GT pose to RGB image, and make a biwi_test.csv file based on that of ARKitFace dataset.  
+
+
 ## Testing and training
 
    Download our pretraind model from [here](https://drive.google.com/file/d/1K9rAmQ7Hduz1on9SWnyLHf_ZxfLwlTOy/view?usp=drive_link) and put it in the folder `./checkpoint/run1/latest_net_R.pth`. 
     
-**Testing**  
+**Testing for ARKitFace dataset**  
 
 ```sh
 $ python -u test.py --csv_path_test test.csv
 ```
+
+
+**Testing for BIWI dataset**
+
+```sh
+$ python -u test.py --csv_path_test biwi_test.csv --dataset_mode biwi 
+```
+
 
 **Training**  
 
