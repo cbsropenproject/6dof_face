@@ -46,7 +46,7 @@ $ python demo.py
 
 ** Download BIWI dataset**
    
-  Please download the BIWI dataset from https://www.kaggle.com/datasets/kmader/biwi-kinect-head-pose-database and transform GT pose to RGB image, and make a biwi_test.csv file based on that of ARKitFace dataset.  
+  Please download the BIWI dataset from https://www.kaggle.com/datasets/kmader/biwi-kinect-head-pose-database and transform GT pose to RGB image, and make a biwi_test.csv file based on that of ARKitFace dataset and the code of./data/biwi_preprocess.py.  
 
 
 ## Testing and training
